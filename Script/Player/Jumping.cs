@@ -8,7 +8,7 @@ public class Jumping : MonoBehaviour
     private GameObject _background;
     private GameObject Pausa;
 
-    public GameObject rayActiv;
+    public static bool isSlowMo = false;
 
     void Start()
     {
@@ -19,27 +19,34 @@ public class Jumping : MonoBehaviour
     private void OnTriggerEnter2D(Collider2D col)
     {
         if (col.tag == "Player")
-     {
-            Invoke("BackgoundColorAttack",3f);
-            //rayActiv.SetActive(false);
-            Time.timeScale = 0.9f;
-            //_background.GetComponent<Animator>().SetBool("bgAttack", false);
-            
+        {
+            BackgoundColorAttackEnter();
+            isSlowMo = true;
         }
+    }
 
-}
+    private void OnTriggerExit2D(Collider2D col)
+    {
+        if (col.tag == "Player")
+        {
+            BackgoundColorAttackExit();
+            isSlowMo = false;
+        }
+    }
 
-
-     void Update()
+    void Update()
     {
     }
 
-    void BackgoundColorAttack()
+    void BackgoundColorAttackEnter()
     {
-        //rayActiv.SetActive(true);
         _background.GetComponent<Animator>().SetBool("bgAttack", true);
         Time.timeScale = 0.3f;
-        
+    }
 
+    void BackgoundColorAttackExit()
+    {
+        _background.GetComponent<Animator>().SetBool("bgAttack", false);
+        Time.timeScale = 0.9f;
     }
 }
