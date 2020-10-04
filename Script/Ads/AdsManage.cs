@@ -9,7 +9,7 @@ public class AdsManage : MonoBehaviour
     private void Awake()
     {
         manage = this;
-        Advertisement.Initialize("3530524");
+        Advertisement.Initialize("3791501", false);
     }
 
     public void ShowAd()
@@ -21,9 +21,12 @@ public class AdsManage : MonoBehaviour
     }
     public void ShowAdDefault()
     {
-        if (Advertisement.IsReady() && Advertisement.isInitialized)
+        if (PlayerPrefs.GetInt("NoAds") != 1)
         {
-            Advertisement.Show("video", new ShowOptions() { resultCallback = HandleAdResult });
+            if (Advertisement.IsReady() && Advertisement.isInitialized)
+            {
+                Advertisement.Show("video", new ShowOptions() { resultCallback = HandleAdResultSkipable });
+            }
         }
     }
 
@@ -32,13 +35,26 @@ public class AdsManage : MonoBehaviour
         switch (result)
         {
             case ShowResult.Finished:
-                PlayerPrefs.SetFloat("Cash", PlayerPrefs.GetFloat("Cash") + 100f);
+                PlayerPrefs.SetFloat("Cash", PlayerPrefs.GetFloat("Cash") + 300f);
+                Amplitude.Instance.logEvent("CashForAds");
                 break;
             case ShowResult.Skipped:
-                print("Skipped");
                 break;
             case ShowResult.Failed:
-                print("Internet?");
+                break;
+        }
+    }
+
+    private void HandleAdResultSkipable(ShowResult result)
+    {
+        switch (result)
+        {
+            case ShowResult.Finished:
+                Amplitude.Instance.logEvent("RestartForAds");
+                break;
+            case ShowResult.Skipped:
+                break;
+            case ShowResult.Failed:
                 break;
         }
     }

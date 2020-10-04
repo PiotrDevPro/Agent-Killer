@@ -2,8 +2,8 @@
 using System.Collections.Generic;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
-using UnityEngine.Advertisements;
 using UnityEngine;
+using MoreMountains.NiceVibrations;
 
 public class CharacterPlayer : MonoBehaviour
 {
@@ -13,9 +13,11 @@ public class CharacterPlayer : MonoBehaviour
     public float jumpforce = 1.0f;
     public Text cashAmount;
     public Text cashShop;
-    private Rigidbody myrigidbody;
-    private Collider coll;
-    
+    Rigidbody myrigidbody;
+    Collider coll;
+    int count = 0;
+    int counter = 0;
+
     //Classes
     public MenuGUI menuGUI;
     public _Game game;
@@ -40,11 +42,18 @@ public class CharacterPlayer : MonoBehaviour
     private GameObject BlowBloodActive_sound;
     private GameObject SwordActive;
     private GameObject FirearmActive;
+    private GameObject openSound;
+    private GameObject closeSound;
+    private GameObject purchaseSound;
+    private GameObject vibroManager;
+    [SerializeField] private GameObject[] _backImg;
+    [SerializeField] private AudioSource[] _tracks;
     public GameObject _background;
     public GameObject _Ok;
+    public GameObject RUsure;
 
 
-    
+
 
     //public SpriteRenderer PlayerFlip;
     public static bool _jump = false;
@@ -52,6 +61,7 @@ public class CharacterPlayer : MonoBehaviour
     bool onGround = true;
     bool isStartProgressTime = false;
     bool isTopScore = false;
+    bool isOk = false;
     public bool isDead = false;
     public bool isPaused = false;
 
@@ -77,7 +87,6 @@ public class CharacterPlayer : MonoBehaviour
     public GameObject textTopPointLabel;
     #endregion
 
-
     //playerConfig
     private float progressFill;
     private float _levelUp;
@@ -85,7 +94,7 @@ public class CharacterPlayer : MonoBehaviour
     public float lv = 0;
     public float Health = 100f;
     //private static int n;
-    public int Damage;
+    public float Damage;
 
 
     [System.Serializable]
@@ -99,7 +108,7 @@ public class CharacterPlayer : MonoBehaviour
     [System.Serializable]
     public class _Player
     {
-        
+
         public Text HpTx;
         public Text HpShopTx;
         public Text LvTx;
@@ -141,14 +150,14 @@ public class CharacterPlayer : MonoBehaviour
         public AudioSource score;
         public AudioSource AnimSound;
         public AudioSource die;
-        
+
     }
 
     [System.Serializable]
     public class _Shop
     {
         public int[] itemPrice;
-        
+
 
         public Text _head;
         public Text _Ears;
@@ -197,13 +206,20 @@ public class CharacterPlayer : MonoBehaviour
         myrigidbody = GetComponent<Rigidbody>();
         coll = GetComponent<Collider>();
         LoadSettings();
+
+        if (PlayerPrefs.GetInt("NoAds") == 1)
+        {
+            NoAds.SetActive(false);
+        }
     }
 
     void Start()
     {
-
+        _tracks[Random.Range(0, 2)].Play();
+        _backImg[Random.Range(0, 3)].GetComponent<Image>().enabled = true;
         tapToPlayButton.SetActive(true);
         _Ok.SetActive(false);
+        RUsure.SetActive(false);
         startAnimText.SetActive(true);
         pauseActive.SetActive(false);
         settingActive.SetActive(true);
@@ -225,9 +241,9 @@ public class CharacterPlayer : MonoBehaviour
         _PlayerRig.GetComponentInChildren<Animator>().SetBool("Ready", false);
         SwordActive = GameObject.FindGameObjectWithTag("DragonTooth");
         FirearmActive = GameObject.FindGameObjectWithTag("FireArmEq");
+        openSound = GameObject.Find("open");
+        purchaseSound = GameObject.Find("purchase");
         ShieldBuying();
-
-        //PlayerPrefs.SetFloat("Cash", PlayerPrefs.GetFloat("Cash")+10000f);
 
     }
 
@@ -237,20 +253,19 @@ public class CharacterPlayer : MonoBehaviour
         {
 
             //Move();
-            
-                Panel.GetComponent<Animator>().SetBool("Open", true);
-                NoAds.GetComponent<Animator>().SetBool("start",true);
-                _PlayerRig.GetComponentInChildren<Animator>().SetBool("Ready", true);
-                _PlayerRig.GetComponentInChildren<Animator>().SetBool("Crouch",true);
-                pauseActive.SetActive(true);
-                settingActive.SetActive(false);
-                isStartProgressTime = true;
-                tapToPlayButton.SetActive(false);
-                startAnimText.SetActive(false);
-                _PlayerRig.GetComponent<Assets.HeroEditor.Common.CharacterScripts.CharacterFlip>().enabled = true;
-                _PlayerRig.GetComponent<Assets.HeroEditor.Common.CharacterScripts.WeaponControls>().enabled = true;
-                _PlayerRig.GetComponent<Assets.HeroEditor.Common.CharacterScripts.WeaponControls>().FixHorizontal = true;
-                
+            Panel.GetComponent<Animator>().SetBool("Open", true);
+            NoAds.GetComponent<Animator>().SetBool("start", true);
+            _PlayerRig.GetComponentInChildren<Animator>().SetBool("Ready", true);
+            _PlayerRig.GetComponentInChildren<Animator>().SetBool("Crouch", true);
+            pauseActive.SetActive(true);
+            settingActive.SetActive(false);
+            isStartProgressTime = true;
+            tapToPlayButton.SetActive(false);
+            startAnimText.SetActive(false);
+            _PlayerRig.GetComponent<Assets.HeroEditor.Common.CharacterScripts.CharacterFlip>().enabled = true;
+            _PlayerRig.GetComponent<Assets.HeroEditor.Common.CharacterScripts.WeaponControls>().enabled = true;
+            _PlayerRig.GetComponent<Assets.HeroEditor.Common.CharacterScripts.WeaponControls>().FixHorizontal = true;
+
 
         }
         #region JumpOnTrigger
@@ -280,28 +295,17 @@ public class CharacterPlayer : MonoBehaviour
         {
             _PlayerRig.GetComponentInChildren<Animator>().SetBool("Walk", false);
             _PlayerRig.GetComponentInChildren<Animator>().SetBool("Stand", true);
-           
+
         }
         else
         {
             _PlayerRig.GetComponentInChildren<Animator>().SetBool("Walk", true);
             _PlayerRig.GetComponentInChildren<Animator>().SetBool("Stand", false);
         }
-        
+
         _PlayerRig.GetComponent<Assets.HeroEditor.Common.CharacterScripts.CharacterFlip>().enabled = true;
         _PlayerRig.GetComponent<Assets.HeroEditor.Common.CharacterScripts.WeaponControls>().enabled = true;
         _PlayerRig.GetComponent<Assets.HeroEditor.Common.CharacterScripts.WeaponControls>().FixHorizontal = true;
-       // if (!CheckGround())
-       // {
-       //     _Anim.GetComponentInChildren<Animator>().SetBool("Jump", true);
-      //      _Anim.GetComponentInChildren<Animator>().SetBool("Walk", false);
-       // }
-       // else
-       // {
-      //      _Anim.GetComponentInChildren<Animator>().SetBool("Jump", false);
-    //        _Anim.GetComponentInChildren<Animator>().SetBool("Walk", true);
-            //_Anim.GetComponentInChildren<Animator>().SetBool("Climb", false);
-      //  }
 
         if (Jumping.isSlowMo)
         {
@@ -325,7 +329,7 @@ public class CharacterPlayer : MonoBehaviour
     public void Jump()
     {
 
-        if ( tapToPlay && CheckGround())
+        if (tapToPlay && CheckGround())
         {
             _PlayerRig.GetComponent<Rigidbody>().AddForce(Vector3.up * jumpforce, ForceMode.Impulse);
             _PlayerRig.GetComponentInChildren<Animator>().SetBool("Jump", true);
@@ -362,15 +366,15 @@ public class CharacterPlayer : MonoBehaviour
     public void Pause()
 
     {
-          if (isDead)
-         {
-             return;
-         }
+        if (isDead)
+        {
+            return;
+        }
         pausePanel.SetActive(true);
         _PlayerRig.GetComponent<Assets.HeroEditor.Common.CharacterScripts.WeaponControls>().enabled = false;
         _PlayerRig.GetComponent<Assets.HeroEditor.Common.CharacterScripts.CharacterFlip>().enabled = false;
         Time.timeScale = 0f;
-        
+
         _audio.main.mute = true;
 
     }
@@ -382,25 +386,29 @@ public class CharacterPlayer : MonoBehaviour
         pausePanel.SetActive(false);
         _PlayerRig.GetComponent<Assets.HeroEditor.Common.CharacterScripts.WeaponControls>().enabled = true;
         _PlayerRig.GetComponent<Assets.HeroEditor.Common.CharacterScripts.CharacterFlip>().enabled = true;
-        if (PlayerPrefs.GetInt("Music")== 1)
+        if (PlayerPrefs.GetInt("Music") == 1)
         {
-            _audio.main.mute = true;
+            _tracks[0].mute = true;
+            _tracks[1].mute = true;
+            _tracks[2].mute = true;
         }
         else
         {
-            _audio.main.mute = false;
+            _tracks[0].mute = false;
+            _tracks[1].mute = false;
+            _tracks[2].mute = false;
         }
-      //  isStartProgressTime = true;
-      //  isPaused = false;
-      //  enemyActiveL.GetComponent<SkinnedMeshRenderer>().enabled = true;
-      //  enemyActiveR.GetComponent<SkinnedMeshRenderer>().enabled = true;
+        //  isStartProgressTime = true;
+        //  isPaused = false;
+        //  enemyActiveL.GetComponent<SkinnedMeshRenderer>().enabled = true;
+        //  enemyActiveR.GetComponent<SkinnedMeshRenderer>().enabled = true;
 
     }
 
     public void Restart()
 
     {
-        
+        Amplitude.Instance.logEvent("Restart");
         Application.LoadLevel(Application.loadedLevel);
         Time.timeScale = 0.8f;
         _audio.main.mute = false;
@@ -467,8 +475,10 @@ public class CharacterPlayer : MonoBehaviour
         game.audioT.isOn = (PlayerPrefs.GetInt("Sound") == 0) ? true : false;
         AudioListener.pause = (PlayerPrefs.GetInt("Sound") == 1) ? true : false;
         game.soundT.isOn = (PlayerPrefs.GetInt("Music") == 0) ? true : false;
-        _audio.main.mute = (PlayerPrefs.GetInt("Music") == 1) ? true : false;
-        game.vibroT.isOn = (PlayerPrefs.GetInt("VibrationActive") == 1) ? true : false;
+        _tracks[0].mute = (PlayerPrefs.GetInt("Music") == 1) ? true : false;
+        _tracks[1].mute = (PlayerPrefs.GetInt("Music") == 1) ? true : false;
+        _tracks[2].mute = (PlayerPrefs.GetInt("Music") == 1) ? true : false;
+        game.vibroT.isOn = (PlayerPrefs.GetInt("VibrationActive") == 0) ? true : false;
 
     }
 
@@ -478,11 +488,13 @@ public class CharacterPlayer : MonoBehaviour
         {
             AudioListener.pause = false;
             PlayerPrefs.SetInt("Sound", 0);
+            Amplitude.Instance.logEvent("SoundON");
         }
         else
         {
             AudioListener.pause = true;
             PlayerPrefs.SetInt("Sound", 1);
+            Amplitude.Instance.logEvent("SoundOFF");
         }
     }
 
@@ -490,22 +502,32 @@ public class CharacterPlayer : MonoBehaviour
     {
         if (tgl.isOn)
         {
-            _audio.main.mute = false;
+            _tracks[0].mute = false;
+            _tracks[1].mute = false;
+            _tracks[2].mute = false;
             PlayerPrefs.SetInt("Music", 0);
+            Amplitude.Instance.logEvent("MusicON");
         }
         else
         {
-            _audio.main.mute = true;
+            _tracks[0].mute = true;
+            _tracks[1].mute = true;
+            _tracks[2].mute = true;
             PlayerPrefs.SetInt("Music", 1);
+            Amplitude.Instance.logEvent("MusicOFF");
         }
     }
 
     public void Vibro(Toggle toggle)
     {
         if (toggle.isOn)
-            PlayerPrefs.SetInt("VibrationActive", 1);
-        else
+        {
             PlayerPrefs.SetInt("VibrationActive", 0);
+            Amplitude.Instance.logEvent("VibroOn");
+        }
+        else
+            PlayerPrefs.SetInt("VibrationActive", 1);
+            Amplitude.Instance.logEvent("VibroOFF");
     }
 
     public void UpdateTop()
@@ -524,7 +546,6 @@ public class CharacterPlayer : MonoBehaviour
 
     public void Quit()
     {
-        AdsManage.manage.ShowAdDefault();
         Application.Quit();
     }
 
@@ -536,41 +557,47 @@ public class CharacterPlayer : MonoBehaviour
     {
 
         ShopA1.SetActive(true);
-        ShopA1.GetComponent<Animator>().SetBool("Shop",true);
+        if (Daily.manage.isReady())
+        {
+            GameObject DayliRewAnim = GameObject.Find("Dayli");
+            DayliRewAnim.GetComponent<Animator>().SetBool("push", true);
+        }
+        ShopA1.GetComponent<Animator>().SetBool("Shop", true);
+        Amplitude.Instance.logEvent("ShopOpen");
         pausePanel.SetActive(false);
         settingPanel.SetActive(false);
         startAnimText.SetActive(false);
         enemyActiveL.GetComponent<SkinnedMeshRenderer>().enabled = false;
         enemyActiveR.GetComponent<SkinnedMeshRenderer>().enabled = false;
-        _PlayerRig.GetComponent<Transform>().position = new Vector3(1.15f,-0.31f);
+        _PlayerRig.GetComponent<Transform>().position = new Vector3(1.15f, -0.31f);
         _PlayerRig.GetComponent<Transform>().localScale = new Vector3(0.3f, 0.3f);
         _PlayerRig.GetComponent<Rigidbody>().isKinematic = true;
         tapToPlayButton.SetActive(false);
         _Ok.SetActive(true);
-
     }
 
     public void Price()
     {
-        shop._head.text = shop.itemPrice[0].ToString() + "$";
-        shop._Ears.text = shop.itemPrice[1].ToString() + "$";
-        shop._hair.text = shop.itemPrice[2].ToString() + "$";
-        shop._Eyebrown.text = shop.itemPrice[3].ToString() + "$";
-        shop._Eyes.text = shop.itemPrice[4].ToString() + "$";
-        shop._mounth.text = shop.itemPrice[5].ToString() + "$";
-        shop._beard.text = shop.itemPrice[6].ToString() + "$";
-        shop._body.text = shop.itemPrice[7].ToString() + "$";
-        shop._glasses.text = shop.itemPrice[8].ToString() + "$";
-        shop._mask.text = shop.itemPrice[9].ToString() + "$";
-        shop._earning.text = shop.itemPrice[10].ToString() + "$";
-        shop._cape.text = shop.itemPrice[11].ToString() + "$";
-        shop._back.text = shop.itemPrice[12].ToString() + "$";
-        shop._helmet.text = shop.itemPrice[13].ToString() + "$";
-        shop._Armor.text = shop.itemPrice[14].ToString() + "$";
-        shop._Shield.text = shop.itemPrice[15].ToString() + "$";
-        shop._Melle1.text = shop.itemPrice[16].ToString() + "$";
-        shop._Melle2.text = shop.itemPrice[17].ToString() + "$";
-        shop._Firearms1.text = shop.itemPrice[18].ToString() + "$";
+        shop._head.text = shop.itemPrice[0].ToString() + "c";
+        shop._Ears.text = shop.itemPrice[1].ToString() + "c";
+        shop._hair.text = shop.itemPrice[2].ToString() + "c";
+        shop._Eyebrown.text = shop.itemPrice[3].ToString() + "c";
+        shop._Eyes.text = shop.itemPrice[4].ToString() + "c";
+        shop._mounth.text = shop.itemPrice[5].ToString() + "c";
+        shop._beard.text = shop.itemPrice[6].ToString() + "c";
+        shop._body.text = shop.itemPrice[7].ToString() + "c";
+        shop._glasses.text = shop.itemPrice[8].ToString() + "c";
+        shop._mask.text = shop.itemPrice[9].ToString() + "c";
+        shop._earning.text = shop.itemPrice[10].ToString() + "c";
+        shop._cape.text = shop.itemPrice[11].ToString() + "c";
+        shop._back.text = shop.itemPrice[12].ToString() + "c";
+        shop._helmet.text = shop.itemPrice[13].ToString() + "c";
+        shop._Armor.text = shop.itemPrice[14].ToString() + "c";
+        shop._Shield.text = shop.itemPrice[15].ToString() + "c";
+        shop._Melle1.text = shop.itemPrice[16].ToString() + "c";
+        shop._Melle2.text = shop.itemPrice[17].ToString() + "c";
+        shop._Firearms1.text = shop.itemPrice[18].ToString() + "c";
+        shop._Firearms2.text = shop.itemPrice[19].ToString() + "c";
     }
 
     public void Ok_Btn()
@@ -584,6 +611,7 @@ public class CharacterPlayer : MonoBehaviour
         _PlayerRig.GetComponent<Transform>().localScale = new Vector3(0.11f, 0.11f);
         _PlayerRig.GetComponent<Rigidbody>().isKinematic = false;
         tapToPlayButton.SetActive(true);
+        Amplitude.Instance.logEvent("ShopClose");
     }
 
     public void cashAmnt()
@@ -595,6 +623,15 @@ public class CharacterPlayer : MonoBehaviour
     public void MoneyNotEnough()
     {
         shop.EnoughMoney.SetActive(false);
+        
+    }
+
+    public void BuyCoins()
+    {
+        shop.EnoughMoney.SetActive(true);
+        GameObject snd = GameObject.Find("shopOpen");
+        snd.GetComponent<AudioSource>().Play();
+        Amplitude.Instance.logEvent("BuyCoinShopOpen");
     }
 
     public void LoadUpgrade()
@@ -774,376 +811,700 @@ public class CharacterPlayer : MonoBehaviour
 
     public void HpUpForCoin()
     {
-        if (PlayerPrefs.GetFloat("Cash") >= 150)
+        if (PlayerPrefs.GetFloat("Cash") >= 120)
         {
             shop.buySound.GetComponent<AudioSource>().Play();
-            PlayerPrefs.SetFloat("Cash", PlayerPrefs.GetFloat("Cash") - 150);
+            PlayerPrefs.SetFloat("Cash", PlayerPrefs.GetFloat("Cash") - 120);
             Health += 50;
+            Amplitude.Instance.logEvent("HpUp");
         } else
         {
             shop.EnoughMoney.SetActive(true);
             shop.BuyFailedSound.GetComponent<AudioSource>().Play();
+            Amplitude.Instance.logEvent("HpUpNoMoney");
         }
     }
 
     public void DamageUpForCash()
     {
-        if (PlayerPrefs.GetFloat("Cash") >= 200)
+        if (PlayerPrefs.GetFloat("Cash") >= 50)
         {
             shop.buySound.GetComponent<AudioSource>().Play();
-            PlayerPrefs.SetFloat("Cash", PlayerPrefs.GetFloat("Cash") - 200);
-            EnemyLeft.manage.DamageFromPlayer += 5;
-            EnemyRight.manage.DamageFromPlayer += 5;
+            PlayerPrefs.SetFloat("Cash", PlayerPrefs.GetFloat("Cash") - 50);
+            EnemyLeft.manage.DamageFromPlayer += 0.25f;
+            EnemyRight.manage.DamageFromPlayer += 0.25f;
+            Amplitude.Instance.logEvent("DamageUp");
         }
         else
         {
             shop.EnoughMoney.SetActive(true);
-            shop.BuyFailedSound.GetComponent<AudioSource>().Play(); 
+            shop.BuyFailedSound.GetComponent<AudioSource>().Play();
+            Amplitude.Instance.logEvent("DamageUpNoMoney");
         }
     }
 
     #region items
 
+    public void OK()
+    {
+        isOk = true;
+        if (count == 1)
+        {
+            if (PlayerPrefs.GetFloat("Cash") < shop.itemPrice[0])
+            {
+                shop.EnoughMoney.SetActive(true);
+                shop.BuyFailedSound.GetComponent<AudioSource>().Play();
+                isOk = false;
+                RUsure.SetActive(false);
+            }
+
+            buyHead();
+            RUsure.SetActive(false);
+        }
+        if (count == 2)
+        {
+            if (PlayerPrefs.GetFloat("Cash") < shop.itemPrice[1])
+            {
+                shop.EnoughMoney.SetActive(true);
+                shop.BuyFailedSound.GetComponent<AudioSource>().Play();
+                isOk = false;
+                RUsure.SetActive(false);
+            }
+
+            buyEars();
+            RUsure.SetActive(false);
+        }
+
+        if (count == 3)
+        {
+            if (PlayerPrefs.GetFloat("Cash") < shop.itemPrice[2])
+            {
+                shop.EnoughMoney.SetActive(true);
+                shop.BuyFailedSound.GetComponent<AudioSource>().Play();
+                isOk = false;
+                RUsure.SetActive(false);
+            }
+
+            buyHair();
+            RUsure.SetActive(false);
+        }
+
+        if (count == 4)
+        {
+            if (PlayerPrefs.GetFloat("Cash") < shop.itemPrice[3])
+            {
+                shop.EnoughMoney.SetActive(true);
+                shop.BuyFailedSound.GetComponent<AudioSource>().Play();
+                isOk = false;
+                RUsure.SetActive(false);
+            }
+
+            EyeBrown();
+            RUsure.SetActive(false);
+        }
+
+        if (count == 5)
+        {
+            if (PlayerPrefs.GetFloat("Cash") < shop.itemPrice[4])
+            {
+                shop.EnoughMoney.SetActive(true);
+                shop.BuyFailedSound.GetComponent<AudioSource>().Play();
+                isOk = false;
+                RUsure.SetActive(false);
+            }
+
+            Eyes();
+            RUsure.SetActive(false);
+        }
+
+        if (count == 6)
+        {
+            if (PlayerPrefs.GetFloat("Cash") < shop.itemPrice[5])
+            {
+                shop.EnoughMoney.SetActive(true);
+                shop.BuyFailedSound.GetComponent<AudioSource>().Play();
+                isOk = false;
+                RUsure.SetActive(false);
+            }
+
+            Mouth();
+            RUsure.SetActive(false);
+        }
+
+        if (count == 7)
+        {
+            if (PlayerPrefs.GetFloat("Cash") < shop.itemPrice[6])
+            {
+                shop.EnoughMoney.SetActive(true);
+                shop.BuyFailedSound.GetComponent<AudioSource>().Play();
+                isOk = false;
+                RUsure.SetActive(false);
+            }
+
+            Beard();
+            RUsure.SetActive(false);
+        }
+
+        if (count == 8)
+        {
+            if (PlayerPrefs.GetFloat("Cash") < shop.itemPrice[7])
+            {
+                shop.EnoughMoney.SetActive(true);
+                shop.BuyFailedSound.GetComponent<AudioSource>().Play();
+                isOk = false;
+                RUsure.SetActive(false);
+            }
+
+            Body();
+            RUsure.SetActive(false);
+        }
+
+        if (count == 9)
+        {
+            if (PlayerPrefs.GetFloat("Cash") < shop.itemPrice[8])
+            {
+                shop.EnoughMoney.SetActive(true);
+                shop.BuyFailedSound.GetComponent<AudioSource>().Play();
+                isOk = false;
+                RUsure.SetActive(false);
+            }
+
+            Glasses();
+            RUsure.SetActive(false);
+        }
+
+        if (count == 10)
+        {
+            if (PlayerPrefs.GetFloat("Cash") < shop.itemPrice[9])
+            {
+                shop.EnoughMoney.SetActive(true);
+                shop.BuyFailedSound.GetComponent<AudioSource>().Play();
+                isOk = false;
+                RUsure.SetActive(false);
+            }
+
+            Mask();
+            RUsure.SetActive(false);
+        }
+
+        if (count == 11)
+        {
+            if (PlayerPrefs.GetFloat("Cash") < shop.itemPrice[10])
+            {
+                shop.EnoughMoney.SetActive(true);
+                shop.BuyFailedSound.GetComponent<AudioSource>().Play();
+                isOk = false;
+                RUsure.SetActive(false);
+            }
+
+            Earrning();
+            RUsure.SetActive(false);
+        }
+
+        if (count == 12)
+        {
+            if (PlayerPrefs.GetFloat("Cash") < shop.itemPrice[11])
+            {
+                shop.EnoughMoney.SetActive(true);
+                shop.BuyFailedSound.GetComponent<AudioSource>().Play();
+                isOk = false;
+                RUsure.SetActive(false);
+            }
+
+            Cape();
+            RUsure.SetActive(false);
+        }
+
+        if (count == 13)
+        {
+            if (PlayerPrefs.GetFloat("Cash") < shop.itemPrice[12])
+            {
+                shop.EnoughMoney.SetActive(true);
+                shop.BuyFailedSound.GetComponent<AudioSource>().Play();
+                isOk = false;
+                RUsure.SetActive(false);
+            }
+
+            Back();
+            RUsure.SetActive(false);
+        }
+
+        if (count == 14)
+        {
+            if (PlayerPrefs.GetFloat("Cash") < shop.itemPrice[13])
+            {
+                shop.EnoughMoney.SetActive(true);
+                shop.BuyFailedSound.GetComponent<AudioSource>().Play();
+                isOk = false;
+                RUsure.SetActive(false);
+            }
+
+            Helmet();
+            RUsure.SetActive(false);
+        }
+
+        if (count == 15)
+        {
+            if (PlayerPrefs.GetFloat("Cash") < shop.itemPrice[14])
+            {
+                shop.EnoughMoney.SetActive(true);
+                shop.BuyFailedSound.GetComponent<AudioSource>().Play();
+                isOk = false;
+                RUsure.SetActive(false);
+            }
+
+            Armor();
+            RUsure.SetActive(false);
+        }
+
+        if (count == 16)
+        {
+            if (PlayerPrefs.GetFloat("Cash") < shop.itemPrice[15])
+            {
+                shop.EnoughMoney.SetActive(true);
+                shop.BuyFailedSound.GetComponent<AudioSource>().Play();
+                isOk = false;
+                RUsure.SetActive(false);
+            }
+
+            Shield();
+            RUsure.SetActive(false);
+        }
+
+        if (count == 17)
+        {
+            if (PlayerPrefs.GetFloat("Cash") < shop.itemPrice[16])
+            {
+                shop.EnoughMoney.SetActive(true);
+                shop.BuyFailedSound.GetComponent<AudioSource>().Play();
+                isOk = false;
+                RUsure.SetActive(false);
+            }
+
+            Melle1H();
+            RUsure.SetActive(false);
+        }
+
+        if (count == 18)
+        {
+            if (PlayerPrefs.GetFloat("Cash") < shop.itemPrice[17])
+            {
+                shop.EnoughMoney.SetActive(true);
+                shop.BuyFailedSound.GetComponent<AudioSource>().Play();
+                isOk = false;
+                RUsure.SetActive(false);
+            }
+
+            Melle2H();
+            RUsure.SetActive(false);
+        }
+
+        if (count == 19)
+        {
+            if (PlayerPrefs.GetFloat("Cash") < shop.itemPrice[18])
+            {
+                shop.EnoughMoney.SetActive(true);
+                shop.BuyFailedSound.GetComponent<AudioSource>().Play();
+                isOk = false;
+                RUsure.SetActive(false);
+            }
+
+            FirearmsH1();
+            RUsure.SetActive(false);
+        }
+
+        if (count == 20)
+        {
+            if (PlayerPrefs.GetFloat("Cash") < shop.itemPrice[19])
+            {
+                shop.EnoughMoney.SetActive(true);
+                shop.BuyFailedSound.GetComponent<AudioSource>().Play();
+                isOk = false;
+                RUsure.SetActive(false);
+            }
+
+            FirearmsH2();
+            RUsure.SetActive(false);
+        }
+    }
+        
+    public void Cancel()
+    {
+        isOk = false;
+        RUsure.SetActive(false);
+    }
+
     public void buyHead()
     {
-        if (PlayerPrefs.GetFloat("Cash") >= shop.itemPrice[0])
+        openSound.GetComponent<AudioSource>().Play();
+        RUsure.SetActive(true);
+        count = 1;
+        if (isOk)
         {
-            PlayerPrefs.SetInt("head", 1);
-            shop.buyHead.SetActive(false);
-            shop.buySound.GetComponent<AudioSource>().Play();
-            PlayerPrefs.SetFloat("Cash", PlayerPrefs.GetFloat("Cash") - shop.itemPrice[0]);
-        } else
-        {
-            shop.EnoughMoney.SetActive(true);
-            shop.BuyFailedSound.GetComponent<AudioSource>().Play();
-            PlayerPrefs.SetInt("head", 0);
+                PlayerPrefs.SetInt("head", 1);
+                shop.buyHead.SetActive(false);
+                shop.buySound.GetComponent<AudioSource>().Play();
+                Invoke("LatencySound", 0.2f);
+                PlayerPrefs.SetFloat("Cash", (int)PlayerPrefs.GetFloat("Cash") - shop.itemPrice[0]);
+                isOk = false;
         }
     }
 
     public void buyEars()
     {
-       if (PlayerPrefs.GetFloat("Cash") >= shop.itemPrice[1])
-       {
-            shop.buyEars.SetActive(false);
-            PlayerPrefs.SetInt("Ears", 1);
-            shop.buySound.GetComponent<AudioSource>().Play();
-            PlayerPrefs.SetFloat("Cash", PlayerPrefs.GetFloat("Cash") - shop.itemPrice[1]);
-        } else
-       {
-            shop.EnoughMoney.SetActive(true);
-            shop.BuyFailedSound.GetComponent<AudioSource>().Play();
-            PlayerPrefs.SetInt("Ears", 0);
-
-        }   
+        openSound.GetComponent<AudioSource>().Play();
+        RUsure.SetActive(true);
+        count = 2;
+        if (isOk)
+        {
+                shop.buyEars.SetActive(false);
+                PlayerPrefs.SetInt("Ears", 1);
+                shop.buySound.GetComponent<AudioSource>().Play();
+                Invoke("LatencySound",0.2f);
+                PlayerPrefs.SetFloat("Cash", PlayerPrefs.GetFloat("Cash") - shop.itemPrice[1]);
+                isOk = false;
+        }      
     }
 
     public void buyHair()
     {
-        if (PlayerPrefs.GetFloat("Cash") >= shop.itemPrice[2])
+        openSound.GetComponent<AudioSource>().Play();
+        RUsure.SetActive(true);
+        count = 3;
+        if (isOk)
         {
-            PlayerPrefs.SetInt("Hair", 1);
-            shop.buyHair.SetActive(false);
-            shop.buySound.GetComponent<AudioSource>().Play();
-            PlayerPrefs.SetFloat("Cash", PlayerPrefs.GetFloat("Cash") - shop.itemPrice[2]);
-        }
-        else
-        {
-            shop.EnoughMoney.SetActive(true);
-            shop.BuyFailedSound.GetComponent<AudioSource>().Play();
-            PlayerPrefs.SetInt("Hair", 0);
-        }
+                PlayerPrefs.SetInt("Hair", 1);
+                shop.buyHair.SetActive(false);
+                shop.buySound.GetComponent<AudioSource>().Play();
+                Invoke("LatencySound", 0.2f);
+                PlayerPrefs.SetFloat("Cash", PlayerPrefs.GetFloat("Cash") - shop.itemPrice[2]);
+                isOk = false;
+        }   
     }
 
     public void EyeBrown()
     {
-        if (PlayerPrefs.GetFloat("Cash") >= shop.itemPrice[3])
+        openSound.GetComponent<AudioSource>().Play();
+        RUsure.SetActive(true);
+        count = 4;
+        if (isOk)
         {
-            PlayerPrefs.SetInt("EyeBrown", 1);
-            shop.buyEyebrows.SetActive(false);
-            shop.buySound.GetComponent<AudioSource>().Play();
-            PlayerPrefs.SetFloat("Cash", PlayerPrefs.GetFloat("Cash") - shop.itemPrice[3]);
-        }
-        else
-        {
-            shop.EnoughMoney.SetActive(true);
-            shop.BuyFailedSound.GetComponent<AudioSource>().Play();
-            PlayerPrefs.SetInt("EyeBrown", 0);
-        }
+                PlayerPrefs.SetInt("EyeBrown", 1);
+                shop.buyEyebrows.SetActive(false);
+                shop.buySound.GetComponent<AudioSource>().Play();
+                Invoke("LatencySound", 0.2f);
+                PlayerPrefs.SetFloat("Cash", PlayerPrefs.GetFloat("Cash") - shop.itemPrice[3]);
+                isOk = false;
+        }   
     }
 
     public void Eyes()
     {
-        if (PlayerPrefs.GetFloat("Cash") >= shop.itemPrice[4])
+        openSound.GetComponent<AudioSource>().Play();
+        RUsure.SetActive(true);
+        count = 5;
+        if (isOk)
         {
-            PlayerPrefs.SetInt("Eyes", 1);
-            shop.buyEyes.SetActive(false);
-            shop.buySound.GetComponent<AudioSource>().Play();
-            PlayerPrefs.SetFloat("Cash", PlayerPrefs.GetFloat("Cash") - shop.itemPrice[4]);
-        }
-        else
-        {
-            shop.EnoughMoney.SetActive(true);
-            shop.BuyFailedSound.GetComponent<AudioSource>().Play();
-            PlayerPrefs.SetInt("Eyes", 0);
+                PlayerPrefs.SetInt("Eyes", 1);
+                shop.buyEyes.SetActive(false);
+                shop.buySound.GetComponent<AudioSource>().Play();
+                Invoke("LatencySound", 0.2f);
+                PlayerPrefs.SetFloat("Cash", PlayerPrefs.GetFloat("Cash") - shop.itemPrice[4]);
+                isOk = false;
         }
     }
 
     public void Mouth()
     {
-        if (PlayerPrefs.GetFloat("Cash") >= shop.itemPrice[5])
+        openSound.GetComponent<AudioSource>().Play();
+        RUsure.SetActive(true);
+        count = 6;
+        if (isOk)
         {
-            PlayerPrefs.SetInt("Mouth", 1);
-            shop.buyMouth.SetActive(false);
-            shop.buySound.GetComponent<AudioSource>().Play();
-            PlayerPrefs.SetFloat("Cash", PlayerPrefs.GetFloat("Cash") - shop.itemPrice[5]);
-        }
-        else
-        {
-            shop.EnoughMoney.SetActive(true);
-            shop.BuyFailedSound.GetComponent<AudioSource>().Play();
-            PlayerPrefs.SetInt("Mouth", 0);
-        }
+            if (PlayerPrefs.GetFloat("Cash") >= shop.itemPrice[5])
+            {
+                PlayerPrefs.SetInt("Mouth", 1);
+                shop.buyMouth.SetActive(false);
+                shop.buySound.GetComponent<AudioSource>().Play();
+                Invoke("LatencySound", 0.2f);
+                PlayerPrefs.SetFloat("Cash", PlayerPrefs.GetFloat("Cash") - shop.itemPrice[5]);
+                isOk = false;
+            }
+        }  
     }
 
     public void Beard()
     {
-        if (PlayerPrefs.GetFloat("Cash") >= shop.itemPrice[6])
+        openSound.GetComponent<AudioSource>().Play();
+        RUsure.SetActive(true);
+        count = 7;
+        if (isOk)
         {
-            PlayerPrefs.SetInt("Beard", 1);
-            shop.buyBeard.SetActive(false);
-            shop.buySound.GetComponent<AudioSource>().Play();
-            PlayerPrefs.SetFloat("Cash", PlayerPrefs.GetFloat("Cash") - shop.itemPrice[6]);
-        }
-        else
-        {
-            shop.EnoughMoney.SetActive(true);
-            shop.BuyFailedSound.GetComponent<AudioSource>().Play();
-            PlayerPrefs.SetInt("Beard", 0);
-        }
+            if (PlayerPrefs.GetFloat("Cash") >= shop.itemPrice[6])
+            {
+                PlayerPrefs.SetInt("Beard", 1);
+                shop.buyBeard.SetActive(false);
+                shop.buySound.GetComponent<AudioSource>().Play();
+                Invoke("LatencySound", 0.2f);
+                PlayerPrefs.SetFloat("Cash", PlayerPrefs.GetFloat("Cash") - shop.itemPrice[6]);
+                isOk = false;
+            }
+        } 
     }
 
     public void Body()
     {
-        if (PlayerPrefs.GetFloat("Cash") >= shop.itemPrice[7])
+        openSound.GetComponent<AudioSource>().Play();
+        RUsure.SetActive(true);
+        count = 8;
+        if (isOk)
         {
-            PlayerPrefs.SetInt("Body", 1);
-            shop.buyBody.SetActive(false);
-            shop.buySound.GetComponent<AudioSource>().Play();
-            PlayerPrefs.SetFloat("Cash", PlayerPrefs.GetFloat("Cash") - shop.itemPrice[7]);
-        }
-        else
-        {
-            shop.EnoughMoney.SetActive(true);
-            shop.BuyFailedSound.GetComponent<AudioSource>().Play();
-            PlayerPrefs.SetInt("Body", 0);
-        }
+            if (PlayerPrefs.GetFloat("Cash") >= shop.itemPrice[7])
+            {
+                PlayerPrefs.SetInt("Body", 1);
+                shop.buyBody.SetActive(false);
+                shop.buySound.GetComponent<AudioSource>().Play();
+                Invoke("LatencySound", 0.2f);
+                PlayerPrefs.SetFloat("Cash", PlayerPrefs.GetFloat("Cash") - shop.itemPrice[7]);
+                isOk = false;
+            }
+        }  
     }
 
     public void Glasses()
     {
-        if (PlayerPrefs.GetFloat("Cash") >= shop.itemPrice[8])
+        openSound.GetComponent<AudioSource>().Play();
+        RUsure.SetActive(true);
+        count = 9;
+        if (isOk)
         {
-            PlayerPrefs.SetInt("Glasses", 1);
-            shop.buyGlasses.SetActive(false);
-            shop.buySound.GetComponent<AudioSource>().Play();
-            PlayerPrefs.SetFloat("Cash", PlayerPrefs.GetFloat("Cash") - shop.itemPrice[8]);
-        }
-        else
-        {
-            shop.EnoughMoney.SetActive(true);
-            shop.BuyFailedSound.GetComponent<AudioSource>().Play();
-            PlayerPrefs.SetInt("Glasses", 0);
-        }
+            if (PlayerPrefs.GetFloat("Cash") >= shop.itemPrice[8])
+            {
+                PlayerPrefs.SetInt("Glasses", 1);
+                shop.buyGlasses.SetActive(false);
+                shop.buySound.GetComponent<AudioSource>().Play();
+                Invoke("LatencySound", 0.2f);
+                PlayerPrefs.SetFloat("Cash", PlayerPrefs.GetFloat("Cash") - shop.itemPrice[8]);
+                isOk = false;
+            }
+        }  
     }
 
     public void Mask()
     {
-        if (PlayerPrefs.GetFloat("Cash") >= shop.itemPrice[9])
+        openSound.GetComponent<AudioSource>().Play();
+        RUsure.SetActive(true);
+        count = 10;
+        if (isOk)
         {
-            PlayerPrefs.SetInt("Mask", 1);
-            shop.buyMask.SetActive(false);
-            shop.buySound.GetComponent<AudioSource>().Play();
-            PlayerPrefs.SetFloat("Cash", PlayerPrefs.GetFloat("Cash") - shop.itemPrice[9]);
-        }
-        else
-        {
-            shop.EnoughMoney.SetActive(true);
-            shop.BuyFailedSound.GetComponent<AudioSource>().Play();
-            PlayerPrefs.SetInt("Mask", 0);
-        }
+            if (PlayerPrefs.GetFloat("Cash") >= shop.itemPrice[9])
+            {
+                PlayerPrefs.SetInt("Mask", 1);
+                shop.buyMask.SetActive(false);
+                shop.buySound.GetComponent<AudioSource>().Play();
+                Invoke("LatencySound", 0.2f);
+                PlayerPrefs.SetFloat("Cash", PlayerPrefs.GetFloat("Cash") - shop.itemPrice[9]);
+                isOk = false;
+            }
+        }  
     }
 
     public void Earrning()
     {
-        if (PlayerPrefs.GetFloat("Cash") >= shop.itemPrice[10])
+        openSound.GetComponent<AudioSource>().Play();
+        RUsure.SetActive(true);
+        count = 11;
+        if (isOk)
         {
-            PlayerPrefs.SetInt("Earrning", 1);
-            shop.buyEarnings.SetActive(false);
-            shop.buySound.GetComponent<AudioSource>().Play();
-            PlayerPrefs.SetFloat("Cash", PlayerPrefs.GetFloat("Cash") - shop.itemPrice[10]);
-        }
-        else
-        {
-            shop.EnoughMoney.SetActive(true);
-            shop.BuyFailedSound.GetComponent<AudioSource>().Play();
-            PlayerPrefs.SetInt("Earrning", 0);
+            if (PlayerPrefs.GetFloat("Cash") >= shop.itemPrice[10])
+            {
+                PlayerPrefs.SetInt("Earrning", 1);
+                shop.buyEarnings.SetActive(false);
+                shop.buySound.GetComponent<AudioSource>().Play();
+                Invoke("LatencySound", 0.2f);
+                PlayerPrefs.SetFloat("Cash", PlayerPrefs.GetFloat("Cash") - shop.itemPrice[10]);
+                isOk = false;
+            }
         }
     }
 
     public void Cape()
     {
-        if (PlayerPrefs.GetFloat("Cash") >= shop.itemPrice[11])
+        openSound.GetComponent<AudioSource>().Play();
+        RUsure.SetActive(true);
+        count = 12;
+        if (isOk)
         {
-            PlayerPrefs.SetInt("Cape", 1);
-            shop.BuyCape.SetActive(false);
-            shop.buySound.GetComponent<AudioSource>().Play();
-            PlayerPrefs.SetFloat("Cash", PlayerPrefs.GetFloat("Cash") - shop.itemPrice[11]);
-        }
-        else
-        {
-            shop.EnoughMoney.SetActive(true);
-            shop.BuyFailedSound.GetComponent<AudioSource>().Play();
-            PlayerPrefs.SetInt("Cape", 0);
-        }
+            if (PlayerPrefs.GetFloat("Cash") >= shop.itemPrice[11])
+            {
+                PlayerPrefs.SetInt("Cape", 1);
+                shop.BuyCape.SetActive(false);
+                shop.buySound.GetComponent<AudioSource>().Play();
+                Invoke("LatencySound", 0.2f);
+                PlayerPrefs.SetFloat("Cash", PlayerPrefs.GetFloat("Cash") - shop.itemPrice[11]);
+                isOk = false;
+            }
+        }  
     }
 
     public void Back()
     {
-        if (PlayerPrefs.GetFloat("Cash") >= shop.itemPrice[12])
+        openSound.GetComponent<AudioSource>().Play();
+        RUsure.SetActive(true);
+        count = 13;
+        if (isOk)
         {
-            PlayerPrefs.SetInt("Back", 1);
-            shop.buyBack.SetActive(false);
-            shop.buySound.GetComponent<AudioSource>().Play();
-            PlayerPrefs.SetFloat("Cash", PlayerPrefs.GetFloat("Cash") - shop.itemPrice[12]);
-        }
-        else
-        {
-            shop.EnoughMoney.SetActive(true);
-            shop.BuyFailedSound.GetComponent<AudioSource>().Play();
-            PlayerPrefs.SetInt("Back", 0);
+            if (PlayerPrefs.GetFloat("Cash") >= shop.itemPrice[12])
+            {
+                PlayerPrefs.SetInt("Back", 1);
+                shop.buyBack.SetActive(false);
+                shop.buySound.GetComponent<AudioSource>().Play();
+                Invoke("LatencySound", 0.2f);
+                PlayerPrefs.SetFloat("Cash", PlayerPrefs.GetFloat("Cash") - shop.itemPrice[12]);
+                isOk = false;
+            }
         }
     }
 
     public void Helmet()
     {
-        if (PlayerPrefs.GetFloat("Cash") >= shop.itemPrice[13])
+        openSound.GetComponent<AudioSource>().Play();
+        RUsure.SetActive(true);
+        count = 14;
+        if (isOk)
         {
-            PlayerPrefs.SetInt("Helmet", 1);
-            shop.buyHelmet.SetActive(false);
-            shop.buySound.GetComponent<AudioSource>().Play();
-            PlayerPrefs.SetFloat("Cash", PlayerPrefs.GetFloat("Cash") - shop.itemPrice[13]);
-        }
-        else
-        {
-            shop.EnoughMoney.SetActive(true);
-            shop.BuyFailedSound.GetComponent<AudioSource>().Play();
-            PlayerPrefs.SetInt("Helmet", 0);
-        }
+            if (PlayerPrefs.GetFloat("Cash") >= shop.itemPrice[13])
+            {
+                PlayerPrefs.SetInt("Helmet", 1);
+                shop.buyHelmet.SetActive(false);
+                shop.buySound.GetComponent<AudioSource>().Play();
+                Invoke("LatencySound", 0.2f);
+                PlayerPrefs.SetFloat("Cash", PlayerPrefs.GetFloat("Cash") - shop.itemPrice[13]);
+                isOk = false;
+            }
+        }  
     }
 
     public void Armor()
     {
-        if (PlayerPrefs.GetFloat("Cash") >= shop.itemPrice[14])
+        openSound.GetComponent<AudioSource>().Play();
+        RUsure.SetActive(true);
+        count = 15;
+        if (isOk)
         {
-            PlayerPrefs.SetInt("Armor", 1);
-            shop.buyArmor.SetActive(false);
-            shop.buySound.GetComponent<AudioSource>().Play();
-            PlayerPrefs.SetFloat("Cash", PlayerPrefs.GetFloat("Cash") - shop.itemPrice[14]);
-        }
-        else
-        {
-            shop.EnoughMoney.SetActive(true);
-            shop.BuyFailedSound.GetComponent<AudioSource>().Play();
-            PlayerPrefs.SetInt("Armor", 0);
-        }
+            if (PlayerPrefs.GetFloat("Cash") >= shop.itemPrice[14])
+            {
+                PlayerPrefs.SetInt("Armor", 1);
+                shop.buyArmor.SetActive(false);
+                shop.buySound.GetComponent<AudioSource>().Play();
+                Invoke("LatencySound", 0.2f);
+                PlayerPrefs.SetFloat("Cash", PlayerPrefs.GetFloat("Cash") - shop.itemPrice[14]);
+                isOk = false;
+            }
+        }  
     }
 
     public void Shield()
     {
-        if (PlayerPrefs.GetFloat("Cash") >= shop.itemPrice[15])
+        openSound.GetComponent<AudioSource>().Play();
+        RUsure.SetActive(true);
+        count = 16;
+        if (isOk)
         {
-            PlayerPrefs.SetInt("Shield", 1);
-            Health += 150;
-            shop.buyShield.SetActive(false);
-            shop.buySound.GetComponent<AudioSource>().Play();
-            PlayerPrefs.SetFloat("Cash", PlayerPrefs.GetFloat("Cash") - shop.itemPrice[15]);
-        }
-        else
-        {
-            shop.EnoughMoney.SetActive(true);
-            shop.BuyFailedSound.GetComponent<AudioSource>().Play();
-            PlayerPrefs.SetInt("Shield", 0);
-        }
+            if (PlayerPrefs.GetFloat("Cash") >= shop.itemPrice[15])
+            {
+                PlayerPrefs.SetInt("Shield", 1);
+                Health += 150;
+                shop.buyShield.SetActive(false);
+                shop.buySound.GetComponent<AudioSource>().Play();
+                Invoke("LatencySound", 0.2f);
+                PlayerPrefs.SetFloat("Cash", PlayerPrefs.GetFloat("Cash") - shop.itemPrice[15]);
+                isOk = false;
+            }
+        }  
     }
 
     public void Melle1H()
     {
-        if (PlayerPrefs.GetFloat("Cash") >= shop.itemPrice[16])
+        openSound.GetComponent<AudioSource>().Play();
+        RUsure.SetActive(true);
+        count = 17;
+        if (isOk)
         {
-            PlayerPrefs.SetInt("Melle1H", 1);
-            shop.buyMelee1H.SetActive(false);
-            shop.buySound.GetComponent<AudioSource>().Play();
-            PlayerPrefs.SetFloat("Cash", PlayerPrefs.GetFloat("Cash") - shop.itemPrice[16]);
-            SwordActive.GetComponent<BoxCollider>().enabled = true;
-        }
-        else
-        {
-            shop.EnoughMoney.SetActive(true);
-            shop.BuyFailedSound.GetComponent<AudioSource>().Play();
-            PlayerPrefs.SetInt("Melle1H", 0);
-            SwordActive.GetComponent<BoxCollider>().enabled = false;
-        }
+            if (PlayerPrefs.GetFloat("Cash") >= shop.itemPrice[16])
+            {
+                PlayerPrefs.SetInt("Melle1H", 1);
+                shop.buyMelee1H.SetActive(false);
+                shop.buySound.GetComponent<AudioSource>().Play();
+                Invoke("LatencySound", 0.2f);
+                PlayerPrefs.SetFloat("Cash", PlayerPrefs.GetFloat("Cash") - shop.itemPrice[16]);
+                SwordActive.GetComponent<BoxCollider>().enabled = true;
+                isOk = false;
+            }
+        }  
     }
 
     public void Melle2H()
     {
-        if (PlayerPrefs.GetFloat("Cash") >= shop.itemPrice[17])
+        openSound.GetComponent<AudioSource>().Play();
+        RUsure.SetActive(true);
+        count = 18;
+        if (isOk)
         {
-            PlayerPrefs.SetInt("Melle2H", 1);
-            shop.buyMelee2H.SetActive(false);
-            shop.buySound.GetComponent<AudioSource>().Play();
-            PlayerPrefs.SetFloat("Cash", PlayerPrefs.GetFloat("Cash") - shop.itemPrice[17]);
-        }
-        else
-        {
-            shop.EnoughMoney.SetActive(true);
-            shop.BuyFailedSound.GetComponent<AudioSource>().Play();
-            PlayerPrefs.SetInt("Melle2H", 0);
-        }
+            if (PlayerPrefs.GetFloat("Cash") >= shop.itemPrice[17])
+            {
+                PlayerPrefs.SetInt("Melle2H", 1);
+                shop.buyMelee2H.SetActive(false);
+                shop.buySound.GetComponent<AudioSource>().Play();
+                Invoke("LatencySound", 0.2f);
+                PlayerPrefs.SetFloat("Cash", PlayerPrefs.GetFloat("Cash") - shop.itemPrice[17]);
+                isOk = false;
+            }
+        } 
     }
 
     public void FirearmsH1()
     {
-        if (PlayerPrefs.GetFloat("Cash") >= shop.itemPrice[18])
+        openSound.GetComponent<AudioSource>().Play();
+        RUsure.SetActive(true);
+        count = 19;
+        if (isOk)
         {
-            PlayerPrefs.SetInt("FirearmsH1", 1);
-            shop.buyFirearmsH1.SetActive(false);
-            shop.buySound.GetComponent<AudioSource>().Play();
-            PlayerPrefs.SetFloat("Cash", PlayerPrefs.GetFloat("Cash") - shop.itemPrice[18]);
-        }
-        else
-        {
-            shop.EnoughMoney.SetActive(true);
-            shop.BuyFailedSound.GetComponent<AudioSource>().Play();
-            PlayerPrefs.SetInt("FirearmsH1", 0);
-        }
+            if (PlayerPrefs.GetFloat("Cash") >= shop.itemPrice[18])
+            {
+                PlayerPrefs.SetInt("FirearmsH1", 1);
+                shop.buyFirearmsH1.SetActive(false);
+                shop.buySound.GetComponent<AudioSource>().Play();
+                Invoke("LatencySound", 0.2f);
+                PlayerPrefs.SetFloat("Cash", PlayerPrefs.GetFloat("Cash") - shop.itemPrice[18]);
+                isOk = false;
+            }
+        }  
     }
 
     public void FirearmsH2()
     {
-        if (PlayerPrefs.GetFloat("Cash") >= shop.itemPrice[19])
+        openSound.GetComponent<AudioSource>().Play();
+        RUsure.SetActive(true);
+        count = 20;
+        if (isOk)
         {
-            PlayerPrefs.SetInt("FirearmsH2", 1);
-            shop.buyFirearmsH2.SetActive(false);
-            shop.buySound.GetComponent<AudioSource>().Play();
-            PlayerPrefs.SetFloat("Cash", PlayerPrefs.GetFloat("Cash") - shop.itemPrice[19]);
-        }
-        else
-        {
-            shop.EnoughMoney.SetActive(true);
-            shop.BuyFailedSound.GetComponent<AudioSource>().Play();
-            PlayerPrefs.SetInt("FirearmsH2", 0);
-        }
+            if (PlayerPrefs.GetFloat("Cash") >= shop.itemPrice[19])
+            {
+                PlayerPrefs.SetInt("FirearmsH2", 1);
+                shop.buyFirearmsH2.SetActive(false);
+                shop.buySound.GetComponent<AudioSource>().Play();
+                Invoke("LatencySound", 0.2f);
+                PlayerPrefs.SetFloat("Cash", PlayerPrefs.GetFloat("Cash") - shop.itemPrice[19]);
+                isOk = false;
+            }
+        //    else
+         //   {
+        //        shop.EnoughMoney.SetActive(true);
+        //        shop.BuyFailedSound.GetComponent<AudioSource>().Play();
+       //         PlayerPrefs.SetInt("FirearmsH2", 0);
+       //     }
+        }    
     }
 
     void ShieldBuying()
@@ -1152,6 +1513,11 @@ public class CharacterPlayer : MonoBehaviour
         {
             Health += 150;
         }
+    }
+
+   public void LatencySound()
+    {
+        purchaseSound.GetComponent<AudioSource>().Play();
     }
 
     #endregion
@@ -1185,16 +1551,22 @@ public class CharacterPlayer : MonoBehaviour
         else if (Health == 0)
         {
 
-
             Time.timeScale = 0.1f;
             _PlayerRig.GetComponentInChildren<Animator>().SetBool("DieBack", true);
             _background.GetComponentInChildren<Animator>().SetBool("Death", true);
             _PlayerRig.GetComponentInChildren<Animator>().SetBool("Crouch", false);
-
             isDead = true;
-            _audio.main.mute = true;
+            //_audio.main.mute = true;
+            _tracks[0].mute = true;
+            _tracks[1].mute = true;
+            _tracks[2].mute = true;
             _audio.die.mute = false;
             isPaused = true;
+            counter++;
+            if (counter == 1)
+            {
+                Amplitude.Instance.logEvent("Dead");
+            }
             if (saveManager.current > saveManager.top)
             {
                 saveManager.top = saveManager.current;
@@ -1507,11 +1879,13 @@ public class CharacterPlayer : MonoBehaviour
             playerConfig.HpTx.text = ((int)Health).ToString();
             BlowBloodActive_sound.GetComponent<AudioSource>().Play();
             bloodActive.SetActive(true);
-            if (PlayerPrefs.GetInt("VibrationActive") == 1)
+            if (PlayerPrefs.GetInt("VibrationActive") == 0)
             {
-                Handheld.Vibrate();
+                
+                MMVibrationManager.Haptic(HapticTypes.SoftImpact, false, true, this);
+                //print("vibro");
+                //Handheld.Vibrate();
             }
-            //_PlayerRig.GetComponentInChildren<Animator>().SetBool("Climb", true);
             if (Health == 0)
             {
                 _audio.die.mute = false;
@@ -1527,11 +1901,12 @@ public class CharacterPlayer : MonoBehaviour
             playerConfig.HpTx.text = ((int)Health).ToString();
             BlowBloodActive_sound.GetComponent<AudioSource>().Play();
             bloodActive.SetActive(true);
-            if (PlayerPrefs.GetInt("VibrationActive") == 1)
+            if (PlayerPrefs.GetInt("VibrationActive") == 0)
             {
-                Handheld.Vibrate();
+                MMVibrationManager.Haptic(HapticTypes.SoftImpact, false, true, this);
+                //print("vibro");
+                //Handheld.Vibrate();
             }
-            //_PlayerRig.GetComponentInChildren<Animator>().SetBool("Climb", true);
             if (Health == 0)
             {
                 _audio.die.mute = false;
@@ -1600,7 +1975,15 @@ public class CharacterPlayer : MonoBehaviour
         MeleeDetected();
         FireArmDetected();
         LoadUpgrade();
-        // PlayerPrefs.DeleteAll();
+    }
 
+    public void Money()
+    {
+        PlayerPrefs.SetFloat("Cash", PlayerPrefs.GetFloat("Cash") + 5000f);
+    }
+
+    public void EraseAll()
+    {
+        PlayerPrefs.DeleteAll();
     }
 }

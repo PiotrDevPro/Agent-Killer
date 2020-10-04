@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine.UI;
 using UnityEngine;
+using MoreMountains.NiceVibrations;
 
 public class EnemyRight : MonoBehaviour
 {
@@ -20,10 +21,10 @@ public class EnemyRight : MonoBehaviour
     Animator _Anim;
 
     
-    private int healths = 20;
+    private float healths = 20;
     private float _sliderHP;
     public float fragR;
-    public int DamageFromPlayer;
+    public float DamageFromPlayer;
     public int SwordDamage;
     int randomHealthIndex;
 
@@ -89,7 +90,11 @@ public class EnemyRight : MonoBehaviour
                 _enemy.healthSliderActive.SetActive(true);
                 healths -= 2 + DamageFromPlayer;
                 blood.SetActive(true);
-                BloodActive_sound.GetComponent<AudioSource>().Play();
+            if (PlayerPrefs.GetInt("VibrationActive") == 0)
+            {
+                MMVibrationManager.Haptic(HapticTypes.Selection, false, true, this);
+            }
+            BloodActive_sound.GetComponent<AudioSource>().Play();
 
             }
 
@@ -97,7 +102,11 @@ public class EnemyRight : MonoBehaviour
             {
                 _enemy.healthSliderActive.SetActive(true);
                 healths -= 50 + DamageFromPlayer;
-                BloodActive_sound.GetComponent<AudioSource>().Play();
+            if (PlayerPrefs.GetInt("VibrationActive") == 0)
+            {
+                MMVibrationManager.Haptic(HapticTypes.Selection, false, true, this);
+            }
+            BloodActive_sound.GetComponent<AudioSource>().Play();
 
             }
 
@@ -106,7 +115,11 @@ public class EnemyRight : MonoBehaviour
                 _enemy.healthSliderActive.SetActive(true);
                 healths -= 10 + DamageFromPlayer;
                 blood.SetActive(true);
-                BloodActive_sound.GetComponent<AudioSource>().Play();
+            if (PlayerPrefs.GetInt("VibrationActive") == 0)
+            {
+                MMVibrationManager.Haptic(HapticTypes.Selection, false, true, this);
+            }
+            BloodActive_sound.GetComponent<AudioSource>().Play();
 
             }
 
@@ -115,7 +128,11 @@ public class EnemyRight : MonoBehaviour
                 _enemy.healthSliderActive.SetActive(true);
                 healths -= 7 + DamageFromPlayer;
                 blood.SetActive(true);
-                BloodActive_sound.GetComponent<AudioSource>().Play();
+            if (PlayerPrefs.GetInt("VibrationActive") == 0)
+            {
+                MMVibrationManager.Haptic(HapticTypes.Selection, false, true, this);
+            }
+            BloodActive_sound.GetComponent<AudioSource>().Play();
 
             }
 
@@ -124,7 +141,11 @@ public class EnemyRight : MonoBehaviour
                 _enemy.healthSliderActive.SetActive(true);
                 healths -= 3 + DamageFromPlayer;
                 blood.SetActive(true);
-                BloodActive_sound.GetComponent<AudioSource>().Play();
+            if (PlayerPrefs.GetInt("VibrationActive") == 0)
+            {
+                MMVibrationManager.Haptic(HapticTypes.Selection, false, true, this);
+            }
+            BloodActive_sound.GetComponent<AudioSource>().Play();
 
             }
             if (collision.collider.CompareTag("Rocket"))
@@ -132,7 +153,11 @@ public class EnemyRight : MonoBehaviour
                 _enemy.healthSliderActive.SetActive(true);
                 healths -= 70 + DamageFromPlayer;
                 blood.SetActive(true);
-                BloodActive_sound.GetComponent<AudioSource>().Play();
+            if (PlayerPrefs.GetInt("VibrationActive") == 0)
+            {
+                MMVibrationManager.Haptic(HapticTypes.SoftImpact, false, true, this);
+            }
+            BloodActive_sound.GetComponent<AudioSource>().Play();
 
             }
 
@@ -141,6 +166,10 @@ public class EnemyRight : MonoBehaviour
             _enemy.healthSliderActive.SetActive(true);
             healths -= 10 + DamageFromPlayer;
             blood.SetActive(true);
+            if (PlayerPrefs.GetInt("VibrationActive") == 0)
+            {
+                MMVibrationManager.Haptic(HapticTypes.SoftImpact, false, true, this);
+            }
             BloodActive_sound.GetComponent<AudioSource>().Play();
 
         }
@@ -177,6 +206,10 @@ public class EnemyRight : MonoBehaviour
         {
             _enemy.healthSliderActive.SetActive(true);
             healths -= 10 + DamageFromPlayer + SwordDamage;
+            if (PlayerPrefs.GetInt("VibrationActive") == 0)
+            {
+                MMVibrationManager.Haptic(HapticTypes.SoftImpact, false, true, this);
+            }
             blood.SetActive(true);
             BloodActive_sound.GetComponent<AudioSource>().Play();
 
